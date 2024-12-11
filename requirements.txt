@@ -8,7 +8,6 @@ requests==2.32.3
 scipy==1.14.1
 python-dateutil
 requests
-math
 slite3
 sys
 logging
