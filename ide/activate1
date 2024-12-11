@@ -1,0 +1,6 @@
+#!/bin/bash
+eval "$(conda shell.bash hook)"
+conda activate AutoTA
+python ./AutoTA.py 1
+conda deactivate
+

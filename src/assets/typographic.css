@@ -1,0 +1,28 @@
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@100;200;300;400;500;600;700;800;900&display=swap');
+
+
+body {
+  font-family: 'Outfit', sans-serif;
+  font-style: normal;
+  font-weight: normal;
+  background-color: black;
+}
+h1 {
+  color: white;
+  font-family: 'Outfit', sans-serif;
+  font-style: normal;
+  font-weight: 600;
+  text-align: center;
+}
+h2 {
+  color: black;
+  font-family: 'Outfit', sans-serif;
+  font-style: normal;
+  font-weight: 400;
+}
+h3, h4, h5, h6 {
+  color: black;
+  font-family: 'Outfit', sans-serif;
+  font-style: normal;
+  font-weight: 200;
+}

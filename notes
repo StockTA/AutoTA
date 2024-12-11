@@ -1,0 +1,57 @@
+AutoTA directory located in /elange/AutoTA
+
+
+Run AutoTA:
+- Export Jupiter notebook file as an executable script (.py) and then copy the .py file back to cloud
+- Ensure AutoTA environment is activated
+- Run script: python AutoTA.py
+    - Note: EOF error results if run Jupiter notebook file instead of py file
+
+Make py executable:
+- Ensure py has shebang
+- Change permissions: chmod +x AutoTA.py
+- Run: ./AutoTA.py
+
+Make db edits/imports:
+    - Copy AutoTA.db file to desktop
+    - Use DB Browser application on Mac to make edits or imports
+    - Copy AutoTA.db file back to AutoTA directory in cloud
+
+Truncate table:
+* DELETE FROM table_name;
+
+List environments:
+- conda env list
+- * indicates active environment
+
+List packages
+- conda list
+
+
+Create environment in cloud:
+	conda create --name AutoTA python=3.10 ipykernel -y
+
+Activate environment:
+	conda activate ENVIRONMENT
+
+Install package (use pip for all packages):
+	pip install pandas pandas_datareader pandas_ta
+	python3 -m pip install numpy==1.26.4 
+	pip install requests scipy 
+        pip install dash
+
+	note: 2.0 version of numpy conflict with pandas_ta. 1.26.4 is last version of version 1
+        if numpy NaN error persists, active base and then re-active AutoTA
+	‘match’ command error results if not using py310
+
+Remove environment:
+	conda remove --name ENV_NAME --all
+
+Run in background:  add &
+
+Background processes: ps -f
+Kill process: kill PID
+Force kill: kill -9 PID
+Continuous tail: tail -f FILENAME
+
+Anaconda using UTC timezone.  Five hour difference.
