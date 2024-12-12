@@ -8,7 +8,7 @@ from dash import Dash, dash_table, dcc, html, Input, Output, callback
 import pandas as pd
 import sqlite3 as sql
 
-database = "../AutoTA/AutoTA.db"
+database = "./AutoTA.db"
 connection = sql.connect(database)
 query1 = '''SELECT * FROM Portfolio_Score'''
 query2 = '''SELECT * FROM AssetClass_Score'''
