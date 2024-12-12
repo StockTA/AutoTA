@@ -167,7 +167,7 @@ if len(sys.argv) > 1:
   SymbList_arg = sys.argv[1]
 
 # Database declarations
-database = "./AutoTA.db"
+database = "AutoTA.db"
 connection = sql.connect(database)
 
 if SymbList_arg == "1":
