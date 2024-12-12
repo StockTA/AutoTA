@@ -1325,16 +1325,16 @@ pd.set_option('display.width', 400)
 #ETFScore_df.to_html('../AutoTA/ETFScore.html', index = False, justify = 'center')
 
 if SymbList_arg == "1":
-  ETFScore_df.to_sql(name = 'AssetClass_Score', con = connection, if_exists = 'replace', index = False) 
+  ETFScore_df.to_sql(name = 'Portfolio_Score', con = connection, if_exists = 'replace', index = False) 
 
 if SymbList_arg == "2":
-  ETFScore_df.to_sql(name = 'ETF_Score', con = connection, if_exists = 'replace', index = False) 
+  ETFScore_df.to_sql(name = 'AssetClass_Score', con = connection, if_exists = 'replace', index = False) 
 
 if SymbList_arg == "3":
-  ETFScore_df.to_sql(name = 'Stock_Score', con = connection, if_exists = 'replace', index = False) 
+  ETFScore_df.to_sql(name = 'ETF_Score', con = connection, if_exists = 'replace', index = False) 
 
 if SymbList_arg == "4":
-  ETFScore_df.to_sql(name = 'Portfolio_Score', con = connection, if_exists = 'replace', index = False) 
+  ETFScore_df.to_sql(name = 'Stock_Score', con = connection, if_exists = 'replace', index = False) 
 
 if SymbList_arg == "5":
   ETFScore_df.to_sql(name = 'Test_Score', con = connection, if_exists = 'replace', index = False) 
