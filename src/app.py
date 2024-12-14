@@ -3,21 +3,41 @@
 
 # In[48]:
 
-
+# Imports
 from dash import Dash, dash_table, dcc, html, Input, Output, callback
 import pandas as pd
-import sqlite3 as sql
+import psycopg2
+from sqlalchemy import create_engine
 
-database = "./AutoTA.db"
-connection = sql.connect(database)
-query1 = '''SELECT * FROM Portfolio_Score'''
-query2 = '''SELECT * FROM AssetClass_Score'''
-query3 = '''SELECT * FROM ETF_Score'''
-query4 = '''SELECT * FROM Stock_Score'''
-df1 = pd.read_sql_query(query1, connection)
-df2 = pd.read_sql_query(query2, connection)
-df3 = pd.read_sql_query(query3, connection)
-df4 = pd.read_sql_query(query4, connection)
+
+# Database connection
+# for postgreSQL database credentials can be written as
+user = 'autotadb_user'
+password = 'yYTTKe6G7OMZQUxvh0POHAoo4dEeSKdA'
+host = 'dpg-ctdqq3jv2p9s73c8jk60-a.virginia-postgres.render.com'
+port = '5432'
+database = 'autotadb'
+# for creating connection string
+connection_str = f"postgresql://{user}:{password}@{host}:{port}/{database}"
+#connection_str = "postgresql://autotadb_user:yYTTKe6G7OMZQUxvh0POHAoo4dEeSKdA@dpg-ctdqq3jv2p9s73c8jk60-a.virginia-postgres.render.com/autotadb"
+
+# SQLAlchemy engine
+engine = create_engine(connection_str)
+with engine.connect() as connection_str:
+    dbConnection = engine.connect();
+
+#database = "./AutoTA.db"
+#connection = sql.connect(database)
+#query1 = '''SELECT * FROM Portfolio_Score'''
+#query2 = '''SELECT * FROM AssetClass_Score'''
+#query3 = '''SELECT * FROM ETF_Score'''
+#query4 = '''SELECT * FROM Stock_Score'''
+#df1 = pd.read_sql_query(query1, dbConnection)
+
+df1 = pd.read_sql_table('Portfolio_Score', dbConnection, schema='public')
+df2 = pd.read_sql_table('AssetClass_Score', dbConnection, schema='public')
+df3 = pd.read_sql_table('ETF_Score', dbConnection, schema='public')
+df4 = pd.read_sql_table('Stock_Score', dbConnection, schema='public')
 df1.fillna(0)
 df2.fillna(0)
 df3.fillna(0)

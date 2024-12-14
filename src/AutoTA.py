@@ -8,17 +8,12 @@
 # Code by Emmett Lange.  All rights reserved.
 
 ##### IMPORT LIBRARIES #####
-#import datetime, time
 from datetime import datetime
 from datetime import date
 from datetime import timedelta
 from datetime import time
-#from datetime import timezone
 from dateutil.relativedelta import relativedelta
-#from zoneinfo import ZoneInfo
 import os
-#import time
-
 import pandas as pd
 import urllib, json
 import requests
@@ -28,7 +23,8 @@ import pandas_ta as ta
 import math
 import numpy as np
 from scipy.stats import zscore
-import sqlite3 as sql
+import psycopg2
+from sqlalchemy import create_engine
 import sys # required for command line parameters
 import logging
 logger = logging.getLogger()
@@ -57,6 +53,12 @@ def get_jsonparsed_data(url):
     res = urlopen(url)
     data = res.read().decode("utf-8")
     return json.loads(data)
+
+def remove_after_char(string, char):
+    index = string.find(char)
+    if index != -1:
+        return string[:index + 1]  # Include the character itself
+    return string
 
 def is_in_time_range(start_time, end_time, current_time=None):
     if current_time is None:
@@ -145,62 +147,69 @@ def macro_regime(dxy_df, tnx_df, spread_df):
     
     return Regime
 
-
-##### GLOBAL DECLARATIONS #####
-api_key = 'qJ9JoGI3SnyzfYK4UwHiXQjormGreJWC' # API key for FMP data service
-#os.environ['TZ'] = 'America/New_York' # Set the new timezone
-#time.tzset()
-
-
-# Command line parameters
-
-#print("Script name:", sys.argv[0])
-#print("Arguments:", sys.argv[1:])
-
-#Args:  1: AssetClass_Master 2: ETF_Master 3: Stock_Master 4: Portfolio_Master 5: Test_Master 6: Problem_Master
-
-SymbList_arg = "2" # Default if no command line argument provided
-
-query = '''SELECT * FROM AssetClass_Master'''
-
-if len(sys.argv) > 1:
-  SymbList_arg = sys.argv[1]
-
-# Database declarations
-#cwd = os.getcwd()
-database = "AutoTA.db"
-connection = sql.connect(database)
-
-if SymbList_arg == "1":
-  query = '''SELECT * FROM Portfolio_Master'''
-
-if SymbList_arg == "2":
-  query = '''SELECT * FROM AssetClass_Master'''
-
-if SymbList_arg == "3":
-  query = '''SELECT * FROM ETF_Master'''
-
-if SymbList_arg == "4":
-  query = '''SELECT * FROM Stock_Master'''
-
-if SymbList_arg == "5":
-  query = '''SELECT * FROM Test_Master'''
-
-if SymbList_arg == "6":
-  query = '''SELECT * FROM Problem_Master'''
-
-print("\nCommand line argument: ", SymbList_arg)
-
-#utc_now = datetime.now(timezone.utc)
-#est_now = utc_now.astimezone(ZoneInfo('America/New_York'))
-
-#timezone = ZoneInfo('America/New_York')
+############################
+##### START PROCESSING #####
 end_dt = date.today()
 start_dt_1y = end_dt - relativedelta(years=1) # 1 year of ETF data
 start_dt_1m = end_dt - relativedelta(months=1) # 1 month of macro data
 current_dt_5h_start = datetime.now() - relativedelta(hours=5) # changes to EST
+print(f"\n\nStart! {current_dt_5h_start:%B %d, %Y %H:%M:%S}")
 
-#ETFCount = 10
+##### GLOBAL DECLARATIONS #####
+api_key = 'qJ9JoGI3SnyzfYK4UwHiXQjormGreJWC' # API key for FMP data service
+#Args:  1: Portfolio_Master 2: AssetClass_Master 3: ETF_Master 4: Stock_Master 5: Test_Master 6: Problem_Master
+#print("Script name:", sys.argv[0])
+#print("Arguments:", sys.argv[1:])
+
+SymbList_arg = "2" # Default if no command line argument provided
+queryTable = 'AssetClass_Master'
+
+if len(sys.argv) > 1:
+  SymbList_arg = sys.argv[1]
+
+# Database connection
+#cwd = os.getcwd()
+
+# for postgreSQL database credentials can be written as 
+user = 'autotadb_user'
+password = 'yYTTKe6G7OMZQUxvh0POHAoo4dEeSKdA'
+host = 'dpg-ctdqq3jv2p9s73c8jk60-a.virginia-postgres.render.com'
+port = '5432'
+database = 'autotadb'
+# for creating connection string
+connection_str = f"postgresql://{user}:{password}@{host}:{port}/{database}"
+#connection_str = "postgresql://autotadb_user:yYTTKe6G7OMZQUxvh0POHAoo4dEeSKdA@dpg-ctdqq3jv2p9s73c8jk60-a.virginia-postgres.render.com/autotadb"
+
+# SQLAlchemy engine
+engine = create_engine(connection_str)
+# you can test if the connection is made or not
+try:
+    with engine.connect() as connection_str:
+        print(f'\nSuccessfully connected to {database} PostgreSQL database')
+except Exception as ex:
+    print(f'\nFailed to connect: {ex}')
+
+dbConnection = engine.connect();
+
+if SymbList_arg == "1":
+  queryTable = 'Portfolio_Master'
+
+if SymbList_arg == "2":
+  queryTable = 'AssetClass_Master' 
+
+if SymbList_arg == "3":
+  queryTable = 'ETF_Master' 
+
+if SymbList_arg == "4":
+  queryTable = 'Stock_Master' 
+
+if SymbList_arg == "5":
+  queryTable = 'Test_Master' 
+
+if SymbList_arg == "6":
+  queryTable = 'Problem_Master' 
+
+print("\nCommand line argument: ", SymbList_arg)
 
 
 # Scoring Parameters
@@ -307,27 +316,24 @@ Reg7ETFs = "SPY,XLB,XLC,XLE,XLF,XLI,XLK,XLY,IVE,IWF,MGK,SMG,QUAL,MTUM,SPMO,SPHB,
 Reg8ETFs = "SPY,XLB,XLC,XLF,XLI,XLK,XLY,IWM,IWR,IWR,IYT,MGK,SMH,MTUM,SPMO,SPHB,SHY,TLT,AGG,EDV,HYG,UDN,FXE,GLD,FBTC,IBIT,SPDW,EEM,BNDX,DBB,GSG,URA,WOOD,USRT"
 
 
-##### START PROCESSING #####
-#print(f"\n\nStart! {datetime.today():%B %d, %Y %H:%M:%S}\n")
-print(f"\n\nStart! {current_dt_5h_start:%B %d, %Y %H:%M:%S}\n")
-
-
 ##### CHECK IF IN SESSION #####
 if is_in_time_range(time(14, 30, 0, 0), time(21, 00, 00, 0)): # UTC time
   VolumePeriod = 1 # Use yesterday's close if in session for relative volume
-  print("Stock exchange in-session.\n")
+  print("\nStock exchange in-session.")
 else:
   VolumePeriod = 0 # Use today's close if session closed for relative volume
-  print("Stock exchange closed.\n")
+  print("\nStock exchange closed.")
 
 
 ##### LOAD MASTER ETF LIST #####
 #ETFList_df = pd.read_csv('/content/drive/MyDrive/AutoTA/Master - ETF.csv') # , index_col=0)
-ETFList_df = pd.read_sql_query(query, connection)
+#ETFList_df = pd.read_sql_query(query, connection)
+#ETFList_df = pd.read_sql_query(query, dbConnection)
+ETFList_df = pd.read_sql_table(queryTable, dbConnection, schema='public')
 
 
 ##### MACRO REGIME #####
-print(f"Determining Macro Regime:\n")
+print(f"\nDetermining Macro Regime:")
 
 # US Dollary (DXY Index)
 print(f" DXY: https://financialmodelingprep.com/api/v3/historical-chart/1day/DX-Y.NYB?from={start_dt_1m:%Y-%m-%d}")
@@ -1322,35 +1328,42 @@ pd.set_option('display.width', 400)
 
 
 #ETFScreener_df.to_csv('../AutoTA/ETFScreener.csv', index = False)
-#ETFScreener_df.to_html('../AutoTA/ETFScreener.html', index = False, justify = 'center')
 #ETFScore_df.to_html('../AutoTA/ETFScore.html', index = False, justify = 'center')
 
+
 if SymbList_arg == "1":
-  ETFScore_df.to_sql(name = 'Portfolio_Score', con = connection, if_exists = 'replace', index = False) 
+    ETFScore_df.to_sql(name = 'Portfolio_Score', method = None, con = dbConnection, schema = 'public', if_exists = 'replace', index = False) 
+    print(f"\nUpdated Porfolio_Score table")
 
 if SymbList_arg == "2":
-  ETFScore_df.to_sql(name = 'AssetClass_Score', con = connection, if_exists = 'replace', index = False) 
+    ETFScore_df.to_sql(name = 'AssetClass_Score', method = None, con = dbConnection, schema = 'public', if_exists = 'replace', index = False) 
+    print(f"\nUpdated AssetClass_Score table")
+    #print(ETFScore_df)
 
 if SymbList_arg == "3":
-  ETFScore_df.to_sql(name = 'ETF_Score', con = connection, if_exists = 'replace', index = False) 
+    ETFScore_df.to_sql(name = 'ETF_Score', method = None, con = dbConnection, schema = 'public', if_exists = 'replace', index = False) 
+    print(f"\nUpdated ETF_Score table")
 
 if SymbList_arg == "4":
-  ETFScore_df.to_sql(name = 'Stock_Score', con = connection, if_exists = 'replace', index = False) 
+    ETFScore_df.to_sql(name = 'Stock_Score', method = None, con = dbConnection, schema = 'public', if_exists = 'replace', index = False) 
+    print(f"\nUpdated Stock_Score table")
 
 if SymbList_arg == "5":
-  ETFScore_df.to_sql(name = 'Test_Score', con = connection, if_exists = 'replace', index = False) 
+    ETFScore_df.to_sql(name = 'Test_Score', method = None, con = dbConnection, schema = 'public', if_exists = 'replace', index = False) 
+    print(f"\nUpdated Test_Score table")
 
 if SymbList_arg == "6":
-  ETFScore_df.to_sql(name = 'Problem_Score', con = connection, if_exists = 'replace', index = False) 
+    ETFScore_df.to_sql(name = 'Problem_Score', method = None, con = dbConnection, schema = 'public', if_exists = 'replace', index = False) 
+    print(f"\nUpdated Problem_Score table")
 
-
-#ETFScore_df.to_sql(name = sqltbl, con = connection, if_exists = 'replace', index = False) 
-connection.close()
+dbConnection.commit()
+dbConnection.close()
 
 #ETFScreenerEvalRow_df.to_html('../AutoTA/ETFScreenerEvalRow.html', index = False, justify = 'center')
 
 current_dt_5h_end = datetime.now() - relativedelta(hours=5) # changes to EST
 processingtime = current_dt_5h_end - current_dt_5h_start
+processingtime = remove_after_char(str(processingtime), '.')
 
 print(f"\nDone! {current_dt_5h_end:%B %d, %Y %H:%M:%S}")
 print(f"\nDuration (seconds): {processingtime}\n")
@@ -1359,13 +1372,5 @@ print(f"\nDuration (seconds): {processingtime}\n")
 
 
 # In[ ]:
-
-
-
-
-
-# In[ ]:
-
-
 
 
